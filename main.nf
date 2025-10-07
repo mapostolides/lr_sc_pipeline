@@ -1,13 +1,13 @@
 nextflow.enable.dsl=2
-params.container = 'lr_sc_pipeline:dev'
+// params.container = 'lr_sc_pipeline:dev'
 //params.input  = "SRR30947479.10000_subset.fastq"
-params.input  = "SRR30947479.1000_subset.fastq"
-params.outdir = "RUNS/test3"
-params.ref_genome    = "ref/genome_chr1.fa"
-params.ref_txome    = "ref/gencode.v38.transcripts.first1000.fa"
+//params.input  = "SRR30947479.1000_subset.fastq"
+//params.outdir = "RUNS/test3"
+//params.ref_genome    = "ref/genome_chr1.fa"
+//params.ref_txome    = "ref/gencode.v38.transcripts.first1000.fa"
 
 process blaze {
-    container 'lr_sc_pipeline:dev'
+    container params.container 
     
 	//  put actual outfiles inside specified directory
     publishDir params.outdir, mode: 'copy'
@@ -71,7 +71,7 @@ process minimap2_txome {
 process oarfish {
   container params.container
   publishDir params.outdir, mode: 'copy'
-  memory '8 GB'
+  //memory '8 GB'
 
   input:
     path txome_bam
@@ -82,7 +82,7 @@ process oarfish {
   script:
   """
   mkdir -p oarfish
-  oarfish --single-cell -j 2  -o params.outdir -a $txome_bam 
+  oarfish --single-cell -j 2  -o oarfish -a $txome_bam 
   """
 }
 
