@@ -89,8 +89,8 @@ process oarfish {
 
   script:
   """
-  mkdir -p oarfish
-  oarfish --single-cell -j 4  -o oarfish/ -a $txome_bam 
+  oarfish --single-cell -j 4 -o oarfish_output -a $txome_bam
+  mkdir -p oarfish; mv oarfish_output* oarfish/
   """
 }
 
