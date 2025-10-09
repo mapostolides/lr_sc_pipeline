@@ -1,4 +1,5 @@
 nextflow.enable.dsl=2
+
 //params.container = '/project/6007998/_shared/apptainer/lr_sc_pipeline/lr_sc_pipeline.sif'
 //params.input  = "SRR30947479.10000_subset.fastq"
 //params.input  = "SRR30947479.1000_subset.fastq"
@@ -13,16 +14,21 @@ process blaze {
     publishDir params.outdir, mode: 'copy'
 
     input:
-    path fastq
+	path fastq
+	path known_bc_list 
 
     output:
 	path "blaze/matched_reads.fastq.gz", emit: filtered_fastq
+    path "blaze/*"
 
     script:
+	def bc_arg = known_bc_list ? "--known-bc-list ${known_bc_list}" : ""
+	def msg = known_bc_list ? "Using whitelist: ${known_bc_list}" : "No whitelist provided"
     """
-    blaze --expect-cells 5000 \
+	echo "[INFO] ${msg}"
+    blaze --expect-cells 5000 ${bc_arg} \
           --output-prefix blaze/ \
-          --threads 1 \
+          --threads 4 \
           $fastq
     """
 }
@@ -53,7 +59,7 @@ process minimap2_txome {
 //    container params.container 
     publishDir params.outdir, mode: 'copy'
     cpus 4
-    memory '8 GB'
+    //memory '8 GB'
 
     input:
     path fastq
@@ -98,8 +104,16 @@ process oarfish {
 	//minimap2(blaze_out.filtered_fastq, ref_genome)
 workflow {
     fastq = file(params.input)
+	// Define optional file parameter
+    known_bc_list = params.known_bc_list
+	//known_bc_list_ch = params.known_bc_list ? Channel.fromPath(params.known_bc_list) : Channel.empty()
+	//known_bc_list_ch = file(params.known_bc_list)
 	ref_txome = file(params.ref_txome)
-    blaze_out = blaze(fastq)
+	// STEP1: BLAZE
+    //blaze_out = blaze(Channel.of(fastq), known_bc_list_ch.ifEmpty(null))  
+    blaze_out = blaze(fastq, known_bc_list)  
+	// STEP2: MINIMAP
 	minimap2_out = minimap2_txome(blaze_out.filtered_fastq, ref_txome)
+	// STEP3: OARFISH
 	oarfish(minimap2_out.txome_bam)
 }
