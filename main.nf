@@ -100,20 +100,30 @@ process oarfish {
   """
 }
 
+include { blaze_v2 } from './modules/blaze'
+
 	//ref_genome = file(params.ref_genome)
 	//minimap2(blaze_out.filtered_fastq, ref_genome)
 workflow {
-    fastq = file(params.input)
+    fastq_ch = Channel.fromPath(params.input_fastq)
+    //fastq = file(params.input)
 	// Define optional file parameter
-    known_bc_list = params.known_bc_list
+    //known_bc_list = params.known_bc_list
+    if (params.known_bc_list) {
+        log.info "[INFO] Using whitelist: ${params.known_bc_list}"
+    } else {
+        log.info "[INFO] No whitelist provided"
+    }
+    whitelist_ch = params.known_bc_list ? 
+        Channel.fromPath(params.known_bc_list) : Channel.value(file('NO_FILE'))
 	//known_bc_list_ch = params.known_bc_list ? Channel.fromPath(params.known_bc_list) : Channel.empty()
 	//known_bc_list_ch = file(params.known_bc_list)
-	ref_txome = file(params.ref_txome)
+	ref_txome_ch = Channel.fromPath(params.ref_txome)
 	// STEP1: BLAZE
     //blaze_out = blaze(Channel.of(fastq), known_bc_list_ch.ifEmpty(null))  
-    blaze_out = blaze(fastq, known_bc_list)  
+    blaze_out = blaze_v2(fastq_ch, whitelist_ch)  
 	// STEP2: MINIMAP
-	minimap2_out = minimap2_txome(blaze_out.filtered_fastq, ref_txome)
+	//minimap2_out = minimap2_txome(blaze_out.filtered_fastq, ref_txome_ch)
 	// STEP3: OARFISH
-	oarfish(minimap2_out.txome_bam)
+	//oarfish(minimap2_out.txome_bam)
 }
