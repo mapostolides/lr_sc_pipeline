@@ -1,5 +1,4 @@
-// Then your process stays almost the same:
-process blaze_v2 {
+process blaze {
     publishDir params.outdir, mode: 'copy'
 
     input:
